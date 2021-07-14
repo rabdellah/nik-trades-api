@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="9f5f81cf-04a6-4d97-a31b-76b3528a7ade" file="config\local.properties" />
+	<configuration doc:name="Configuration" doc:id="4e389f02-595b-49f6-889f-61a40173b3da" defaultErrorHandler-ref="global-Error-Handler" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="2cba7b42-1b73-4f13-b56b-1ad5b396383f" >
+		<db:mssql-connection host="DESKTOP-CBMN212" user="muleUser" password="Arefa@2021" databaseName="MyDatabase" port="1433" instanceName="MSSQLSERVER"/>
+	</db:config>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="2ce4f500-7fd8-4696-96b3-109ade46b26d" >
+		<http:listener-connection host="localhost" port="8082" connectionIdleTimeout="100000"/>
+	</http:listener-config>
+	<apikit:config name="nik-trader-api-config" api="resource::0e3df113-598c-411e-9680-94b04de947c8:nik-trader-api:1.0.1:raml:zip:nik-trader-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+	
+	<file:config name="File_Config" doc:name="File Config" doc:id="784e9142-87ea-42d8-9e05-a33a002d4bdb" />
+	<error-handler name="global-Error-Handler" doc:id="67a781f3-dbe0-48d4-9783-17d9cac78772" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8d7b71d2-4d96-49ca-a682-a71738af4072" >
+			<flow-ref doc:name="set-error-response-sub_Flow" doc:id="3bc79ce8-8f79-4e88-ad2d-2131999d000e" name="set-error-response-sub_Flow"/>
+		</on-error-propagate>
+	</error-handler>
+	<sub-flow name="set-error-response-sub_Flow" doc:id="e0471f9e-5e01-483c-828a-3820be8b40c0" >
+		<ee:transform doc:name="Set error response" doc:id="c27790ac-ba41-4653-8b7e-061f3f2d15ab" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": "failed",
+	"errorType": error.errorType.identifier,
+	"errorDescription": error.description
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>

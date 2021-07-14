@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	
+	<flow name="nik-trades-apiFlow" doc:id="98b01f52-6316-489b-aebc-ca9c0c2a330c" >
+		<http:listener doc:name="Listener" doc:id="5e0fc989-9f0e-4e2a-9689-f20531bdd752" path="/trade" config-ref="HTTP_Listener_config1"/>
+		<flow-ref doc:name="Process-trades-file-subflow" doc:id="78858b3c-6c79-4b75-9a52-753469d82c89" name="Process-trades-file-subflow"/>
+	</flow>
+</mule>

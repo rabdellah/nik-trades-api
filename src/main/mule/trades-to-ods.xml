@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="process-trades-to-ods-Sub_Flow" doc:id="f9a2155f-1f71-4bff-a4d1-42aac24beeed" >
+		<logger level="INFO" doc:name="Logger" doc:id="00b8b8d7-e395-48ae-9adc-d7fd4596b2da" message='#["request received to process trade to ODS,correlationId: "++ correlationId]'/>
+		<choice doc:name="Choice" doc:id="58cdd350-e441-4824-8f8b-61b0c55aea3b" >
+			<when expression='#[lower(payload."type") == "equity"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="283879ea-5872-4f1d-b508-38ce343efca0" message='#["received equity trade ,correlationId:" ++ correlationId]'/>
+				<ee:transform doc:name="Set vars" doc:id="983ed2cb-bca8-46de-9977-87c75937132f">
+					<ee:message>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="sqlQuery"><![CDATA[%dw 2.0
+output application/json
+---
+"INSERT INTO [dbo].[equity]
+           ([index]
+           ,symbol
+           ,operation
+           ,quantity
+           ,price)
+               
+VALUES
+(
+	:index,
+	:symbol,
+	:operation,
+	:quantity,
+	:price                
+)"]]></ee:set-variable>
+						<ee:set-variable variableName="sqlParameters"><![CDATA[%dw 2.0
+output application/json
+---
+{
+  index: payload.index,
+  symbol: payload.symbol,
+  operation: payload.operation,
+  quantity: payload.quantity,
+   price: payload.price
+ }]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="Insert-trades-to-Sub_Flow" doc:id="f347c73a-47f7-4699-8955-c9f2ceb7423e" name="Insert-trades-to-Sub_Flow"/>
+				<ee:transform doc:name="Set Response" doc:id="902c557b-20dc-4b2f-a9b0-6e8399d59b96">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": "Equity Trade processed successfully"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression='#[lower(payload."type") == "fx"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="1bb2408c-7f34-4737-bc3f-13284e96d143" message='#["received fx trade ,correlationId:" ++ correlationId]'/>
+				<ee:transform doc:name="Set Vars" doc:id="f4ca8a40-b5f8-4e87-bad2-813acb1f403a">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="sqlParameters"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	index: payload.index,
+	symbol: payload.symbol,
+	operation: payload.operation,
+	quantity: payload.quantity,
+	price: payload.price
+}
+]]></ee:set-variable>
+						<ee:set-variable variableName="sqlQuery"><![CDATA[%dw 2.0
+output application/java
+---
+"INSERT INTO [dbo].[fx]
+           ([index]
+           ,symbol
+           ,operation
+           ,quantity
+           ,price)
+               
+VALUES
+(
+	:index,
+	:symbol,
+	:operation,
+	:quantity,
+	:price                
+)"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+				<flow-ref doc:name="Insert-trades-to-Sub_Flow" doc:id="a74fcff0-0037-4493-a6a5-c77a9960999e" name="Insert-trades-to-Sub_Flow"/>
+				<ee:transform doc:name="Set Response" doc:id="29aea825-0313-48d0-8351-c4d645efb84b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"status": "FX Trade processed successfully"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="c9e6291b-2a29-4f7e-b8cf-ec5b0b30c12f" message="recived invalid"/>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="Insert-trades-to-Sub_Flow" doc:id="251e714f-e240-42a2-8551-df3e43655db4" >
+		<logger level="INFO" doc:name="Logger" doc:id="e83eb92d-c392-47fa-911b-aacfbef13610" message="ready to insert to the database "/>
+		<db:insert doc:name="Insert" doc:id="679d633e-1c33-48a3-9093-5bf82162cb11" config-ref="Database_Config">
+			<db:sql ><![CDATA[#[vars.sqlQuery]]]></db:sql>
+			<db:input-parameters ><![CDATA[#[vars.sqlParameters]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger" doc:id="0eded2bb-73ed-43e4-bb54-96bd199eb83a" message="Data inserted to the database "/>
+	</sub-flow>
+</mule>
